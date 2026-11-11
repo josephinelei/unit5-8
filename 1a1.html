@@ -1,0 +1,2679 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>平面圖形及多邊面積｜互動教學 Web App</title>
+  <style>
+    :root {
+      --pink: #f472b6;
+      --blue: #38bdf8;
+      --green: #4ade80;
+      --yellow-note: #fef9c3;
+      --cream-bg: #fdfaf2;
+      --cream-dot: #ece5d5;
+      --hand-border: #4a4035;
+      --dark-border: #1e293b;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      font-family: "PingFang HK", "Microsoft JhengHei", "Heiti TC", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f0f5fa;
+      color: #1e293b;
+      overflow-x: hidden;
+    }
+
+    /* 頂部學生與教師工具列 */
+    header {
+      background: #ffffff;
+      border-bottom: 3px solid var(--dark-border);
+      padding: 10px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 0 rgba(30,41,59,0.08);
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 900;
+      margin: 0;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .round-pill {
+      background: var(--blue);
+      color: #0f172a;
+      font-weight: 900;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 2px solid var(--dark-border);
+      font-size: 0.9rem;
+    }
+
+    .teacher-gold-badge {
+      display: none;
+      background: var(--green);
+      color: #064e3b;
+      font-weight: 900;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 2px solid var(--dark-border);
+      font-size: 0.9rem;
+      box-shadow: 2px 2px 0 var(--dark-border);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    select#studentSelect {
+      font-size: 1rem;
+      font-weight: 800;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 2px solid var(--dark-border);
+      background: #fff;
+      color: #0f172a;
+      min-width: 215px;
+      outline: none;
+    }
+
+    .btn {
+      font-size: 0.95rem;
+      font-weight: 800;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 2px solid var(--dark-border);
+      background: #ffffff;
+      color: #1e293b;
+      cursor: pointer;
+      box-shadow: 0 3px 0 var(--dark-border);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 var(--dark-border);
+    }
+
+    .btn-logout { background: #fee2e2; color: #991b1b; }
+    .btn-teacher { background: #fef3c7; color: #92400e; }
+    .btn-submit { background: var(--green); color: #064e3b; }
+    .btn-hint { background: #fef08a; color: #854d0e; }
+
+    /* 單元切換按鈕 */
+    .part-tabs {
+      max-width: 1200px;
+      margin: 14px auto 6px;
+      padding: 0 16px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .part-tab {
+      flex: 1;
+      padding: 12px 16px;
+      font-size: 1.08rem;
+      font-weight: 900;
+      border-radius: 14px;
+      border: 3px solid var(--dark-border);
+      background: #e2e8f0;
+      color: #475569;
+      cursor: pointer;
+      box-shadow: 0 4px 0 var(--dark-border);
+      text-align: center;
+    }
+
+    .part-tab.active {
+      background: var(--pink);
+      color: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 var(--dark-border);
+    }
+
+    /* 學生作答區：iPad 雙欄響應式佈局 */
+    .workspace {
+      max-width: 1200px;
+      margin: 12px auto 32px;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    @media (max-width: 880px) {
+      .workspace { grid-template-columns: 1fr; }
+    }
+
+    .card-box {
+      background: #ffffff;
+      border: 3px solid var(--dark-border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 6px 6px 0 rgba(30,41,59,0.12);
+    }
+
+    /* 題號導覽列 */
+    .q-nav-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .q-num-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 2px solid var(--dark-border);
+      background: #f8fafc;
+      font-weight: 900;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .q-num-btn.current {
+      background: var(--blue);
+      color: #0f172a;
+      box-shadow: 0 2px 0 var(--dark-border);
+    }
+
+    .q-num-btn.solved {
+      background: var(--green);
+      color: #064e3b;
+    }
+
+    .q-meta-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .lesson-tag {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 2px solid var(--dark-border);
+      padding: 4px 12px;
+      border-radius: 8px;
+      font-weight: 900;
+      font-size: 0.92rem;
+    }
+
+    .q-prompt-box {
+      font-size: 1.18rem;
+      font-weight: 800;
+      line-height: 1.5;
+      color: #0f172a;
+      background: #f8fafc;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 2px dashed #94a3b8;
+      margin-bottom: 14px;
+    }
+
+    /* 圖形 SVG 視窗 */
+    .svg-stage {
+      width: 100%;
+      height: 300px;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      background-color: #ffffff;
+      background-image:
+        linear-gradient(to right, #f1f5f9 1px, transparent 1px),
+        linear-gradient(to bottom, #f1f5f9 1px, transparent 1px);
+      background-size: 20px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* 黃色公式便利貼 */
+    .sticky-note {
+      display: none;
+      margin-top: 14px;
+      background: var(--yellow-note);
+      border: 2px solid #ca8a04;
+      border-left: 14px solid #eab308;
+      border-radius: 10px;
+      padding: 12px 16px;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+    }
+
+    .sticky-note h4 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+      color: #854d0e;
+    }
+
+    .sticky-note p {
+      margin: 4px 0;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #713f12;
+      line-height: 1.45;
+    }
+
+    /* 雙格列式作答區 */
+    .input-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 900;
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+    }
+
+    .dual-formula-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: #f1f5f9;
+      padding: 12px;
+      border-radius: 14px;
+      border: 2px solid var(--dark-border);
+      margin-bottom: 12px;
+    }
+
+    .dual-formula-bar label {
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+
+    .formula-input {
+      font-size: 1.2rem;
+      font-weight: 800;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 3px solid #94a3b8;
+      background: #ffffff;
+      color: #0f172a;
+      outline: none;
+    }
+
+    .formula-input.focused {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.22);
+    }
+
+    #exprInput {
+      flex: 1;
+      min-width: 170px;
+    }
+
+    #ansInput {
+      width: 105px;
+      text-align: center;
+    }
+
+    .unit-badge {
+      font-size: 1.15rem;
+      font-weight: 900;
+      background: #e2e8f0;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 2px solid #cbd5e1;
+    }
+
+    .diag-feedback {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.98rem;
+      margin-bottom: 12px;
+      border: 2px solid var(--dark-border);
+      line-height: 1.45;
+    }
+
+    .diag-feedback.ok { display: block; background: #dcfce7; color: #14532d; }
+    .diag-feedback.warn { display: block; background: #fef9c3; color: #713f12; }
+    .diag-feedback.err { display: block; background: #fee2e2; color: #7f1d1d; }
+
+    /* 螢幕觸控小鍵盤 */
+    .touch-keypad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .k-btn {
+      padding: 14px 6px;
+      font-size: 1.25rem;
+      font-weight: 900;
+      border-radius: 12px;
+      border: 2px solid var(--dark-border);
+      background: #ffffff;
+      color: #0f172a;
+      cursor: pointer;
+      box-shadow: 0 3px 0 var(--dark-border);
+      text-align: center;
+    }
+
+    .k-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 var(--dark-border);
+    }
+
+    .k-op { background: #e0f2fe; color: #0369a1; }
+    .k-fn { background: #fee2e2; color: #b91c1c; font-size: 1.05rem; }
+    .k-jump {
+      grid-column: span 2;
+      background: #fef08a;
+      color: #854d0e;
+      font-size: 1.1rem;
+    }
+
+    .bottom-nav-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    /* 遠端課堂鎖定遮罩 */
+    #lockScreenOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.92);
+      z-index: 900;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .lock-modal-box {
+      background: var(--cream-bg);
+      border: 4px solid var(--hand-border);
+      border-radius: 24px;
+      padding: 32px 26px;
+      max-width: 450px;
+      box-shadow: 0 8px 0 var(--hand-border);
+    }
+
+    /* 零延遲防窺教師密碼盤 (400351) */
+    #pinOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.72);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .pin-card {
+      background: var(--cream-bg);
+      border: 4px solid var(--hand-border);
+      border-radius: 22px;
+      padding: 24px;
+      width: 100%;
+      max-width: 350px;
+      box-shadow: 0 7px 0 var(--hand-border);
+      text-align: center;
+    }
+
+    .pin-slots-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      margin: 16px 0;
+    }
+
+    .pin-box {
+      height: 48px;
+      border: 3px solid var(--hand-border);
+      border-radius: 10px;
+      background: #ffffff;
+      font-size: 1.65rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #1e293b;
+    }
+
+    .pin-keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .pin-k {
+      height: 54px;
+      border: 3px solid var(--hand-border);
+      border-radius: 12px;
+      background: #ffffff;
+      color: #1e293b;
+      font-size: 1.35rem;
+      font-weight: 900;
+      cursor: pointer;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: none !important;
+    }
+
+    .pin-k:active, .pin-k:focus, .pin-k:hover {
+      background: #ffffff !important;
+      color: #1e293b !important;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    /* 手繪奶油風「課堂活動數據統計」浮動面板 */
+    #teacherBoardModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 950;
+      background: rgba(15, 23, 42, 0.65);
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      overflow-y: auto;
+    }
+
+    .board-modal-window {
+      width: 100%;
+      max-width: 1100px;
+      background-color: var(--cream-bg);
+      background-image: radial-gradient(var(--cream-dot) 2px, transparent 2px);
+      background-size: 22px 22px;
+      border-radius: 26px;
+      padding: 20px 26px 22px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+      color: #2b2620;
+      margin: auto;
+    }
+
+    .board-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .board-title-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .clipboard-svg-box {
+      width: 34px;
+      height: 38px;
+      background: #d6c7b2;
+      border: 2.5px solid var(--hand-border);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+    }
+
+    .board-h2 {
+      font-size: 1.85rem;
+      font-weight: 900;
+      margin: 0;
+      color: #2b2620;
+      border-bottom: 3.5px solid #2b2620;
+      padding-bottom: 2px;
+      letter-spacing: 1px;
+    }
+
+    .board-clock-center {
+      text-align: center;
+    }
+
+    .board-date-str {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #78716c;
+      letter-spacing: 1.5px;
+    }
+
+    .board-time-str {
+      font-size: 2.6rem;
+      font-weight: 900;
+      color: #4a4035;
+      line-height: 1.05;
+      letter-spacing: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .board-actions-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill-action-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 15px;
+      font-size: 0.92rem;
+      font-weight: 900;
+      color: #ffffff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.22);
+    }
+
+    .pill-action-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.22);
+    }
+
+    .btn-red-lock { background: #ef4444; }
+    .btn-green-open { background: #10b981; }
+    .btn-blue-sync { background: #2563eb; }
+    .btn-amber-reset { background: #f59e0b; color: #fff; }
+    .btn-slate-close { background: #334155; }
+
+    .board-main-grid {
+      display: grid;
+      grid-template-columns: 1.58fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 920px) {
+      .board-main-grid { grid-template-columns: 1fr; }
+    }
+
+    .hand-panel {
+      background: #ffffff;
+      border: 3.5px solid var(--hand-border);
+      border-radius: 20px;
+      box-shadow: 0 6px 0 var(--hand-border);
+      padding: 24px 20px 18px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-badge-top {
+      position: absolute;
+      top: -15px;
+      left: 18px;
+      padding: 3px 16px;
+      border-radius: 999px;
+      border: 2.5px solid var(--hand-border);
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: #2b2620;
+    }
+
+    .badge-pink { background: #f48fb1; }
+    .badge-mint { background: #6ee7b7; }
+
+    .left-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .left-h3 {
+      font-size: 1.35rem;
+      font-weight: 900;
+      margin: 0;
+      color: #1e293b;
+    }
+
+    .btn-show-avg {
+      background: #f1f5f9;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: #334155;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-show-avg:hover {
+      background: #e2e8f0;
+    }
+
+    .avg-subtitle-blue {
+      font-size: 1.22rem;
+      font-weight: 900;
+      color: #1e3a8a;
+      margin: 2px 0 10px;
+    }
+
+    .chick-progress-area {
+      position: relative;
+      padding-top: 26px;
+      margin-bottom: 12px;
+    }
+
+    .chick-track-outer {
+      width: 100%;
+      height: 26px;
+      background: #f5efe2;
+      border: 3px solid var(--hand-border);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .chick-track-striped {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: repeating-linear-gradient(
+        -45deg,
+        #6ee7b7,
+        #6ee7b7 12px,
+        #a7f3d0 12px,
+        #a7f3d0 24px
+      );
+      transition: width 0.35s ease;
+    }
+
+    .chick-Runner-svg {
+      position: absolute;
+      top: 0px;
+      left: 5%;
+      transform: translateX(-50%);
+      transition: left 0.35s ease;
+      pointer-events: none;
+    }
+
+    .flag-goal-svg {
+      position: absolute;
+      right: 14px;
+      top: 1px;
+      pointer-events: none;
+    }
+
+    .chick-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #78716c;
+    }
+
+    .chick-pct-num {
+      font-size: 1rem;
+      font-weight: 900;
+      color: #2b2620;
+    }
+
+    .chick-acc-label {
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: #1e293b;
+    }
+
+    .student-cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 4px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 600px) {
+      .student-cards-grid { grid-template-columns: 1fr; }
+    }
+
+    .st-progress-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 9px 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .st-progress-card:hover, .st-progress-card.selected-st {
+      border-color: #3b82f6;
+      background: #f8fafc;
+    }
+
+    .st-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.92rem;
+      font-weight: 900;
+      color: #1e293b;
+      margin-bottom: 6px;
+    }
+
+    .st-mini-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #f1f5f9;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .st-mini-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+
+    .bar-gold { background: #eab308; }
+    .bar-green { background: #10b981; }
+    .bar-orange { background: #f59e0b; }
+
+    .att-two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .att-stat-box {
+      border: 2.5px solid var(--hand-border);
+      border-radius: 14px;
+      padding: 10px 14px;
+    }
+
+    .att-blue-bg { background: #e0f2fe; }
+    .att-mint-bg { background: #d1fae5; }
+
+    .att-stat-title {
+      font-size: 0.92rem;
+      font-weight: 900;
+      color: #1e293b;
+    }
+
+    .att-stat-value {
+      font-size: 2.1rem;
+      font-weight: 900;
+      color: #1e293b;
+      margin-top: 2px;
+    }
+
+    .att-stat-value small {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .speed-board-pink {
+      flex: 1;
+      background: #fce7f3;
+      border: 2.5px solid var(--hand-border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .speed-board-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .speed-board-title {
+      font-size: 1.05rem;
+      font-weight: 900;
+      margin: 0;
+      color: #1e293b;
+    }
+
+    .speed-board-sub {
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: #be123c;
+      text-align: right;
+    }
+
+    .speed-pills-container {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      max-height: 230px;
+      overflow-y: auto;
+    }
+
+    .speed-pill-row {
+      background: #ffffff;
+      border: 1.5px solid #f9a8d4;
+      border-radius: 10px;
+      padding: 7px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    .speed-pill-right {
+      color: #be123c;
+    }
+
+    .speed-pill-right small {
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .board-round-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .round-big-btn {
+      padding: 12px 16px;
+      font-size: 1.25rem;
+      font-weight: 900;
+      border-radius: 14px;
+      border: 3px solid var(--hand-border);
+      background: #ffffff;
+      color: #2b2620;
+      cursor: pointer;
+      box-shadow: 0 5px 0 var(--hand-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .round-big-btn.active-round-btn {
+      background: #fef3c7;
+    }
+
+    .ongoing-green-tag {
+      background: #10b981;
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 900;
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+
+    .board-footer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 8px;
+    }
+
+    .footer-tip-text {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #78716c;
+    }
+
+    .btn-toggle-log {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: #334155;
+      cursor: pointer;
+    }
+
+    #submissionLogDrawer {
+      display: none;
+      margin-top: 12px;
+      background: #ffffff;
+      border: 2.5px solid var(--hand-border);
+      border-radius: 14px;
+      padding: 12px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+
+    .log-table th, .log-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+    }
+
+    .log-table th {
+      background: #f8fafc;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部學生選單與登出/教師入口 -->
+  <header>
+    <div class="brand-wrap">
+      <h1 class="brand-title">📐 平面圖形及多邊面積</h1>
+      <span class="round-pill" id="topRoundBadge">活動一</span>
+      <span class="teacher-gold-badge" id="teacherGoldBadge">👩‍🏫 教師免鎖講解模式</span>
+    </div>
+
+    <div class="header-controls">
+      <select id="studentSelect" onchange="handleStudentSelect()">
+        <option value="">👉 請先選擇你的姓名</option>
+        <option value="1 王仕軒">1 王仕軒</option>
+        <option value="2 吳映林">2 吳映林</option>
+        <option value="3 阮苡喬">3 阮苡喬</option>
+        <option value="4 武沛瑤">4 武沛瑤</option>
+        <option value="5 梁愷喬">5 梁愷喬</option>
+        <option value="6 陳樂怡">6 陳樂怡</option>
+        <option value="7 陳蘊瀅">7 陳蘊瀅</option>
+        <option value="8 賀梓桐">8 賀梓桐</option>
+        <option value="9 馮子嫣">9 馮子嫣</option>
+        <option value="10 黃羽晞">10 黃羽晞</option>
+        <option value="11 黃紫晴">11 黃紫晴</option>
+        <option value="12 樊婧瑤">12 樊婧瑤</option>
+        <option value="13 蔣月晴">13 蔣月晴</option>
+        <option value="14 關咏芯">14 關咏芯</option>
+        <option value="15 毛穎聰">15 毛穎聰</option>
+        <option value="16 王柏言">16 王柏言</option>
+        <option value="17 吳燁朗">17 吳燁朗</option>
+        <option value="18 李東燁">18 李東燁</option>
+        <option value="19 李健峰">19 李健峰</option>
+        <option value="20 李梓萬">20 李梓萬</option>
+        <option value="21 邱子毅">21 邱子毅</option>
+        <option value="22 張曉鋒">22 張曉鋒</option>
+        <option value="23 陳殷齊">23 陳殷齊</option>
+        <option value="24 勞家謙">24 勞家謙</option>
+        <option value="25 曾建言">25 曾建言</option>
+        <option value="26 黃昊霆">26 黃昊霆</option>
+        <option value="27 黃柏希">27 黃柏希</option>
+        <option value="28 黃翊鎧">28 黃翊鎧</option>
+        <option value="29 楊溢曦">29 楊溢曦</option>
+        <option value="30 蔡一駿">30 蔡一駿</option>
+        <option value="31 蔡榐顥">31 蔡榐顥</option>
+        <option value="32 鄭行之">32 鄭行之</option>
+        <option value="33 盧澤軒">33 盧澤軒</option>
+        <option value="34 關智誠">34 關智誠</option>
+        <option value="35 訪客">35 訪客</option>
+      </select>
+      <button class="btn btn-logout" onclick="logoutAndReset()">🚪 登出</button>
+      <button class="btn btn-teacher" onclick="openPinOverlay()">⚙️ 設定 / 教師看板</button>
+    </div>
+  </header>
+
+  <!-- 兩大部份切換 -->
+  <div class="part-tabs">
+    <button class="part-tab active" id="partBtn1" onclick="switchPartMode(1)">
+      第一部份：平面圖形面積與逆運算（共 20 題）
+    </button>
+    <button class="part-tab" id="partBtn2" onclick="switchPartMode(2)">
+      第二部份：組合圖形（多邊形）分割法與填補法（共 10 題）
+    </button>
+  </div>
+
+  <!-- 雙欄主互動區 -->
+  <main class="workspace">
+    <!-- 左欄：題號、幾何圖形與黃色公式便利貼 -->
+    <section class="card-box">
+      <div class="q-nav-grid" id="qNavGrid"></div>
+
+      <div class="q-meta-bar">
+        <span class="lesson-tag" id="lessonCategoryTag">平行四邊形面積</span>
+        <button class="btn btn-hint" onclick="toggleStickyHint()">💡 提示</button>
+      </div>
+
+      <div class="q-prompt-box" id="questionPromptText">題目載入中...</div>
+
+      <div class="svg-stage" id="svgStage"></div>
+
+      <!-- 黃色公式便利貼 -->
+      <div class="sticky-note" id="yellowStickyNote">
+        <h4>📌 公式便利貼與思考提示</h4>
+        <p id="stickyThinkText"></p>
+        <hr style="border:none;border-top:1px dashed #ca8a04;margin:6px 0;">
+        <p id="stickyFormulaText"></p>
+      </div>
+    </section>
+
+    <!-- 右欄：雙格列式作答與螢幕小鍵盤 -->
+    <section class="card-box">
+      <div class="input-section-header">
+        <span>✏️ 列式計算（無時間限制・全整數）</span>
+        <span id="solvedProgressText" style="color:#2563eb;">已答對：0 / 20</span>
+      </div>
+
+      <div class="dual-formula-bar">
+        <label for="exprInput">算式：</label>
+        <input
+          type="text"
+          id="exprInput"
+          class="formula-input focused"
+          placeholder="請在此輸入算式"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          onclick="focusMathField('expr')"
+          onkeydown="handleKeydown(event, 'expr')"
+        >
+        <label for="ansInput">＝</label>
+        <input
+          type="text"
+          id="ansInput"
+          class="formula-input"
+          placeholder="答案"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          onclick="focusMathField('ans')"
+          onkeydown="handleKeydown(event, 'ans')"
+        >
+        <span class="unit-badge" id="unitBadge">cm²</span>
+      </div>
+
+      <div class="diag-feedback" id="diagFeedback"></div>
+
+      <!-- 內建螢幕運算小鍵盤 -->
+      <div class="touch-keypad">
+        <button class="k-btn" onclick="tapKey('7')">7</button>
+        <button class="k-btn" onclick="tapKey('8')">8</button>
+        <button class="k-btn" onclick="tapKey('9')">9</button>
+        <button class="k-btn k-op" onclick="tapKey('×')">×</button>
+
+        <button class="k-btn" onclick="tapKey('4')">4</button>
+        <button class="k-btn" onclick="tapKey('5')">5</button>
+        <button class="k-btn" onclick="tapKey('6')">6</button>
+        <button class="k-btn k-op" onclick="tapKey('÷')">÷</button>
+
+        <button class="k-btn" onclick="tapKey('1')">1</button>
+        <button class="k-btn" onclick="tapKey('2')">2</button>
+        <button class="k-btn" onclick="tapKey('3')">3</button>
+        <button class="k-btn k-op" onclick="tapKey('+')">+</button>
+
+        <button class="k-btn" onclick="tapKey('0')">0</button>
+        <button class="k-btn k-op" onclick="tapKey('(')">(</button>
+        <button class="k-btn k-op" onclick="tapKey(')')">)</button>
+        <button class="k-btn k-op" onclick="tapKey('-')">-</button>
+
+        <button class="k-btn k-fn" onclick="tapBackspace()">⌫ 退格</button>
+        <button class="k-btn k-fn" onclick="tapClearAll()">清除</button>
+        <button class="k-btn k-jump" onclick="jumpToAnswerField()">＝ 答案</button>
+      </div>
+
+      <div class="bottom-nav-row">
+        <button class="btn" onclick="goPrevQuestion()">⬅️ 上一題</button>
+        <button class="btn btn-submit" style="flex:1;justify-content:center;font-size:1.1rem;" onclick="checkAndSubmit()">✅ 提交答案</button>
+        <button class="btn" onclick="goNextQuestion()">下一題 ➡️</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- 遠端課堂鎖定遮罩 -->
+  <div id="lockScreenOverlay">
+    <div class="lock-modal-box">
+      <div style="font-size:3.2rem;margin-bottom:8px;">🔒</div>
+      <h2 style="margin:0 0 10px;font-size:1.6rem;">本節課已完結 / 暫停作答</h2>
+      <p style="font-weight:800;color:#5c5346;margin-bottom:20px;line-height:1.5;">
+        請放下 iPad 專心聽老師講解！<br>（老師可點擊下方按鈕輸入密碼進入「教師免鎖講解模式」）
+      </p>
+      <button class="btn btn-teacher" onclick="openPinOverlay()">👩‍🏫 教師密碼解鎖</button>
+    </div>
+  </div>
+
+  <!-- 零延遲防窺教師密碼盤 (密碼：400351) -->
+  <div id="pinOverlay">
+    <div class="pin-card">
+      <h3 style="margin:0;font-size:1.3rem;">🔐 請輸入教師密碼</h3>
+      <p style="margin:6px 0 0;font-size:0.85rem;color:#64748b;font-weight:800;">零延遲防窺鍵盤（輸入滿 6 位自動驗證）</p>
+      <div class="pin-slots-row" id="pinSlotsRow">
+        <div class="pin-box"></div>
+        <div class="pin-box"></div>
+        <div class="pin-box"></div>
+        <div class="pin-box"></div>
+        <div class="pin-box"></div>
+        <div class="pin-box"></div>
+      </div>
+      <div id="pinErrText" style="color:#dc2626;font-weight:900;font-size:0.9rem;min-height:22px;margin-bottom:6px;"></div>
+      <div class="pin-keypad-grid">
+        <button class="pin-k" onpointerdown="pressPin('1', event)">1</button>
+        <button class="pin-k" onpointerdown="pressPin('2', event)">2</button>
+        <button class="pin-k" onpointerdown="pressPin('3', event)">3</button>
+        <button class="pin-k" onpointerdown="pressPin('4', event)">4</button>
+        <button class="pin-k" onpointerdown="pressPin('5', event)">5</button>
+        <button class="pin-k" onpointerdown="pressPin('6', event)">6</button>
+        <button class="pin-k" onpointerdown="pressPin('7', event)">7</button>
+        <button class="pin-k" onpointerdown="pressPin('8', event)">8</button>
+        <button class="pin-k" onpointerdown="pressPin('9', event)">9</button>
+        <button class="pin-k" onpointerdown="clearPin(event)" style="font-size:1rem;">清除</button>
+        <button class="pin-k" onpointerdown="pressPin('0', event)">0</button>
+        <button class="pin-k" onpointerdown="closePinOverlay(event)" style="font-size:1rem;">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手繪奶油風「課堂活動數據統計」教師看板 -->
+  <div id="teacherBoardModal">
+    <div class="board-modal-window">
+      <!-- 頂部：標題 + 日期大時鐘 + 四顆彩色控制按鈕 -->
+      <div class="board-top-bar">
+        <div class="board-title-left">
+          <div class="clipboard-svg-box">📋</div>
+          <h2 class="board-h2">課堂活動數據統計</h2>
+        </div>
+
+        <div class="board-clock-center">
+          <div class="board-date-str" id="boardDateStr">2026年11月11日 星期三</div>
+          <div class="board-time-str" id="boardTimeStr">21:35:06</div>
+        </div>
+
+        <div class="board-actions-right">
+          <button class="pill-action-btn btn-red-lock" id="remoteLockBtn" onclick="toggleRemoteLock()">
+            🔒 一鍵鎖定課堂
+          </button>
+          <button class="pill-action-btn btn-blue-sync" onclick="manualSyncNow()">
+            🔄 同步數據
+          </button>
+          <button class="pill-action-btn btn-amber-reset" onclick="resetCurrentRoundStats()">
+            🗑️ 清空重置
+          </button>
+          <button class="pill-action-btn btn-slate-close" onclick="closeTeacherBoard()">
+            ✖ 關閉
+          </button>
+        </div>
+      </div>
+
+      <!-- 左右雙大卡片 -->
+      <div class="board-main-grid">
+        <!-- 左大卡片：學生答對題數 + 小雞進度條 + 雙欄皇冠學生進度卡 -->
+        <div class="hand-panel">
+          <div class="panel-badge-top badge-pink" id="leftCardBadge">第 1 科 / 共 3 科 (活動一)</div>
+
+          <div class="left-top-row">
+            <h3 class="left-h3">學生答對題數：</h3>
+            <button class="btn-show-avg" onclick="selectStudentForChick(null)">
+              👥 顯示全班平均
+            </button>
+          </div>
+
+          <div class="avg-subtitle-blue" id="spotlightSubtitle">
+            全班平均答對題數 (0.0/20)
+          </div>
+
+          <!-- 小雞斜紋進度條 -->
+          <div class="chick-progress-area">
+            <div class="chick-Runner-svg" id="chickRunnerSvg" style="left: 5%;">
+              <svg width="36" height="32" viewBox="0 0 46 42">
+                <ellipse cx="22" cy="22" rx="14" ry="13" fill="#facc15" stroke="#4a4035" stroke-width="3"/>
+                <circle cx="27" cy="19" r="2.3" fill="#1e293b"/>
+                <polygon points="35,19 42,21 35,24" fill="#ef4444" stroke="#4a4035" stroke-width="1.8"/>
+              </svg>
+            </div>
+
+            <div class="flag-goal-svg">
+              <svg width="26" height="30" viewBox="0 0 32 38">
+                <line x1="6" y1="4" x2="6" y2="36" stroke="#4a4035" stroke-width="3" stroke-linecap="round"/>
+                <polygon points="6,5 28,11 6,18" fill="#dc2626" stroke="#4a4035" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </div>
+
+            <div class="chick-track-outer">
+              <div class="chick-track-striped" id="chickStripeFill" style="width: 0%;"></div>
+            </div>
+
+            <div class="chick-meta-row">
+              <span>點擊下方學生可單獨檢視小雞進度</span>
+              <span class="chick-pct-num" id="chickPctNum">0%</span>
+              <span class="chick-acc-label">正確率 / 完成度</span>
+            </div>
+          </div>
+
+          <!-- 34 位學生雙欄進度卡片 -->
+          <div class="student-cards-grid" id="studentCardsGrid"></div>
+        </div>
+
+        <!-- 右大卡片：出席/缺席方塊 + 粉紅速度王排行榜 -->
+        <div class="hand-panel">
+          <div class="panel-badge-top badge-mint">出 (缺) 席</div>
+
+          <div class="att-two-cols">
+            <div class="att-stat-box att-blue-bg">
+              <div class="att-stat-title">出席 (已作答)：</div>
+              <div class="att-stat-value"><span id="boardPresentNum">0</span> <small>人</small></div>
+            </div>
+
+            <div class="att-stat-box att-mint-bg">
+              <div class="att-stat-title">缺席 (未作答)：</div>
+              <div class="att-stat-value"><span id="boardAbsentNum">34</span> <small>人</small></div>
+            </div>
+          </div>
+
+          <div class="speed-board-pink">
+            <div class="speed-board-header">
+              <h4 class="speed-board-title">🏆 速度王排行榜 (首10人)：</h4>
+              <span class="speed-board-sub">按完成題數與時間排序</span>
+            </div>
+            <div class="speed-pills-container" id="boardSpeedPills"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部三顆活動切換大按鈕（含綠色「進行中」標籤） -->
+      <div class="board-round-buttons">
+        <button class="round-big-btn active-round-btn" id="actBigBtn1" onclick="switchActivityRound('活動一')">
+          <span>活動一</span>
+          <span class="ongoing-green-tag" id="ongoingTag1">進行中</span>
+        </button>
+        <button class="round-big-btn" id="actBigBtn2" onclick="switchActivityRound('活動二')">
+          <span>活動二</span>
+          <span class="ongoing-green-tag" id="ongoingTag2" style="display:none;">進行中</span>
+        </button>
+        <button class="round-big-btn" id="actBigBtn3" onclick="switchActivityRound('活動三')">
+          <span>活動三</span>
+          <span class="ongoing-green-tag" id="ongoingTag3" style="display:none;">進行中</span>
+        </button>
+      </div>
+
+      <!-- 底部提示與展開最新作答明細表 -->
+      <div class="board-footer-bar">
+        <div class="footer-tip-text">
+          💡 提示：點擊「活動一 / 活動二 / 活動三」可切換檢視該回合數據，並同步將全班 iPad 切換至該活動回合！
+        </div>
+        <button class="btn-toggle-log" onclick="toggleSubmissionLog()">
+          📝 展開/收起最新作答明細表
+        </button>
+      </div>
+
+      <!-- 最新作答明細表抽屜 -->
+      <div id="submissionLogDrawer">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>時間</th>
+              <th>學生姓名</th>
+              <th>題型</th>
+              <th>學生答案 (算式 = 答案)</th>
+              <th>結果</th>
+              <th>活動回合</th>
+            </tr>
+          </thead>
+          <tbody id="submissionLogTbody">
+            <tr><td colspan="6" style="text-align:center;color:#94a3b8;">尚無作答紀錄</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /*************************************************************************
+     * 1. 全域常數與內建專屬 Google Apps Script 網址
+     *************************************************************************/
+    const SPREADSHEET_ID = "1JI6F-ewdF-TeCIiy9RPu_8oASzR6IIDDBTV3LyU15Yk";
+    const DATA_SHEET_NAME = "平面及組合圖形面積_data";
+    const TEACHER_PIN_CODE = "400351";
+
+    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbxQqFotnTZwIQnOHhCr56ZXleXSzUi_5sNzgmzQ8JuDHQzxwyR2YjHOY8wFClKVXrzHJQ/exec";
+    let GAS_WEB_APP_URL = DEFAULT_GAS_URL;
+    localStorage.setItem("MACAU_MATH_GAS_URL", DEFAULT_GAS_URL);
+
+    const OFFICIAL_STUDENTS = [
+      "1 王仕軒","2 吳映林","3 阮苡喬","4 武沛瑤","5 梁愷喬",
+      "6 陳樂怡","7 陳蘊瀅","8 賀梓桐","9 馮子嫣","10 黃羽晞",
+      "11 黃紫晴","12 樊婧瑤","13 蔣月晴","14 關咏芯","15 毛穎聰",
+      "16 王柏言","17 吳燁朗","18 李東燁","19 李健峰","20 李梓萬",
+      "21 邱子毅","22 張曉鋒","23 陳殷齊","24 勞家謙","25 曾建言",
+      "26 黃昊霆","27 黃柏希","28 黃翊鎧","29 楊溢曦","30 蔡一駿",
+      "31 蔡榐顥","32 鄭行之","33 盧澤軒","34 關智誠"
+    ];
+
+    let currentPart = 1; // 1: 第一部份(20題), 2: 第二部份(10題)
+    let currentQIndex = 0;
+    let focusedField = "expr";
+    let remoteLockStatus = "open";
+    let currentRoundName = "活動一";
+    let selectedBoardStudent = null;
+
+    const roundStats = {
+      "活動一": {},
+      "活動二": {},
+      "活動三": {}
+    };
+
+    let recentLogs = [];
+    let mySolvedIds = { 1: new Set(), 2: new Set() };
+
+    /*************************************************************************
+     * 2. Web Audio API 原生合成音效
+     *************************************************************************/
+    let audioCtx = null;
+    function ensureAudio() {
+      if (!audioCtx) {
+        const Cls = window.AudioContext || window.webkitAudioContext;
+        if (Cls) audioCtx = new Cls();
+      }
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+
+    function sfxClick() {
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(540, ctx.currentTime);
+      gain.gain.setValueAtTime(0.07, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
+    }
+
+    function sfxCorrect() {
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.065);
+        gain.gain.setValueAtTime(0.14, ctx.currentTime + i * 0.065);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.065 + 0.32);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.065);
+        osc.stop(ctx.currentTime + i * 0.065 + 0.32);
+      });
+    }
+
+    function sfxWrong() {
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(155, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(110, ctx.currentTime + 0.26);
+      gain.gain.setValueAtTime(0.11, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.28);
+    }
+
+    /*************************************************************************
+     * 3. 黃色公式便利貼字典（無出處字樣、不洩漏題目數字）
+     *************************************************************************/
+    const STICKY_FORMULAS = {
+      para_area: "平行四邊形面積：底 × 高",
+      para_h: "平行四邊形的高：面積 ÷ 底",
+      para_b: "平行四邊形的底：面積 ÷ 高",
+      tri_area: "三角形面積：底 × 高 ÷ 2",
+      tri_h: "三角形的高：面積 × 2 ÷ 底",
+      tri_b: "三角形的底：面積 × 2 ÷ 高",
+      trap_area: "梯形面積：（上底 + 下底）× 高 ÷ 2",
+      trap_h: "梯形的高：面積 × 2 ÷（上底 + 下底）",
+      trap_top: "梯形的上底：面積 × 2 ÷ 高 - 下底",
+      trap_bot: "梯形的下底：面積 × 2 ÷ 高 - 上底",
+      rect_area: "長方形面積：底 × 高",
+      sq_area: "正方形面積：邊長 × 邊長",
+      split_method: "分割法：把多邊形分割成若干個基本平面圖形（長方形、正方形、平行四邊形、三角形、梯形），然後計算各圖形面積之和。",
+      fill_method: "填補法：把多邊形填補成一個完整的大圖形，計算大圖形的面積後，再減去補上的空白圖形面積。"
+    };
+
+    /*************************************************************************
+     * 4. 第一部份題庫：20 道全新題（含干擾項邊長，圖中僅標示長度數值，無文字提示）
+     *************************************************************************/
+    const PART1_BANK = [
+      // 1-2 平行四邊形面積 (2題)
+      {
+        id: "P1_01", tag: "平行四邊形面積", unit: "cm²", ans: 28,
+        prompt: "根據圖中標示的長度，這個平行四邊形的面積是多少平方厘米(cm²)？",
+        think: "注意觀察直角符號，找出互相垂直的底和高，不要被斜邊的長度干擾。",
+        fKey: "para_area",
+        svg: "para", p: { b: "7 cm", h: "4 cm", s: "5 cm", fill: "#f472b6" }
+      },
+      {
+        id: "P1_02", tag: "平行四邊形面積", unit: "dm²", ans: 54,
+        prompt: "根據圖中標示的長度，這個平行四邊形的面積是多少平方分米(dm²)？",
+        think: "高是底和對邊之間的垂直距離，找出與高垂直的底邊來相乘。",
+        fKey: "para_area",
+        svg: "para_out", p: { b: "9 dm", h: "6 dm", s: "7 dm", fill: "#38bdf8" }
+      },
+      // 3-4 三角形面積 (2題)
+      {
+        id: "P1_03", tag: "三角形面積", unit: "cm²", ans: 20,
+        prompt: "根據圖中標示的長度，這個三角形的面積是多少平方厘米(cm²)？",
+        think: "找出直角符號所在的底和垂直高，相乘後除以 2，避開兩側斜邊的干擾。",
+        fKey: "tri_area",
+        svg: "tri", p: { b: "8 cm", h: "5 cm", sL: "6 cm", sR: "7 cm", fill: "#4ade80" }
+      },
+      {
+        id: "P1_04", tag: "三角形面積", unit: "m²", ans: 12,
+        prompt: "根據圖中標示的長度，這個直角三角形的面積是多少平方米(m²)？",
+        think: "直角三角形中互相垂直的兩條直角邊才是底和高，最長的斜邊是干擾項。",
+        fKey: "tri_area",
+        svg: "tri_right", p: { b: "6 m", h: "4 m", hyp: "7 m", fill: "#38bdf8" }
+      },
+      // 5-6 梯形面積 (2題)
+      {
+        id: "P1_05", tag: "梯形面積", unit: "cm²", ans: 24,
+        prompt: "根據圖中標示的長度，這個梯形的面積是多少平方厘米(cm²)？",
+        think: "找出互相平行的上底和下底，以及垂直的高；左右兩條斜邊不需要用來計算面積。",
+        fKey: "trap_area",
+        svg: "trap", p: { top: "3 cm", bot: "9 cm", h: "4 cm", sL: "5 cm", sR: "5 cm", fill: "#4ade80" }
+      },
+      {
+        id: "P1_06", tag: "梯形面積", unit: "dm²", ans: 35,
+        prompt: "根據圖中標示的長度，這個直角梯形的面積是多少平方分米(dm²)？",
+        think: "先將平行的上底與下底相加，乘以垂直高，再除以 2，注意避開右邊斜邊。",
+        fKey: "trap_area",
+        svg: "trap_right", p: { top: "5 dm", bot: "9 dm", h: "5 dm", sR: "6 dm", fill: "#f472b6" }
+      },
+      // 7-8 長方形面積 (2題，加入對角線干擾項)
+      {
+        id: "P1_07", tag: "長方形面積", unit: "cm²", ans: 48,
+        prompt: "根據圖中標示的長度，這個長方形的面積是多少平方厘米(cm²)？",
+        think: "長方形面積只需將互相垂直的底和高相乘，中間的虛線對角線是干擾長度。",
+        fKey: "rect_area",
+        svg: "rect_diag", p: { b: "8 cm", h: "6 cm", diag: "10 cm", fill: "#38bdf8" }
+      },
+      {
+        id: "P1_08", tag: "長方形面積", unit: "m²", ans: 45,
+        prompt: "根據圖中標示的長度，這個長方形的面積是多少平方米(m²)？",
+        think: "找出長方形的底和闊（高）直接相乘，忽略對角線的長度。",
+        fKey: "rect_area",
+        svg: "rect_diag", p: { b: "9 m", h: "5 m", diag: "11 m", fill: "#4ade80" }
+      },
+      // 9-10 正方形面積 (2題，加入對角線干擾項)
+      {
+        id: "P1_09", tag: "正方形面積", unit: "cm²", ans: 25,
+        prompt: "根據圖中標示的長度，這個正方形的面積是多少平方厘米(cm²)？",
+        think: "正方形四條邊一樣長，用邊長乘以邊長即可，中間斜向對角線是干擾長度。",
+        fKey: "sq_area",
+        svg: "sq_diag", p: { s: "5 cm", diag: "7 cm", fill: "#4ade80" }
+      },
+      {
+        id: "P1_10", tag: "正方形面積", unit: "dm²", ans: 81,
+        prompt: "根據圖中標示的長度，這個正方形的面積是多少平方分米(dm²)？",
+        think: "將正方形的邊長乘以邊長，不要使用對角線的數字。",
+        fKey: "sq_area",
+        svg: "sq_diag", p: { s: "9 dm", diag: "13 dm", fill: "#f472b6" }
+      },
+      // 11-12 平行四邊形求高或底 (2題)
+      {
+        id: "P1_11", tag: "平行四邊形求高", unit: "m", ans: 6,
+        prompt: "已知這個平行四邊形的面積是 48 平方米(m²)，求圖中「? m」所代表的高是多少米(m)？",
+        think: "高與底邊互相垂直，用平行四邊形的面積除以底邊長度，斜邊是干擾項。",
+        fKey: "para_h",
+        svg: "para", p: { b: "8 m", h: "? m", s: "7 m", fill: "#f472b6" }
+      },
+      {
+        id: "P1_12", tag: "平行四邊形求底", unit: "dm", ans: 9,
+        prompt: "已知這個平行四邊形的面積是 63 平方分米(dm²)，求圖中「? dm」所代表的底是多少分米(dm)？",
+        think: "找出與底邊垂直的高，用面積除以高，避開斜邊長度的干擾。",
+        fKey: "para_b",
+        svg: "para", p: { b: "? dm", h: "7 dm", s: "8 dm", fill: "#38bdf8" }
+      },
+      // 13-14 三角形求高或底 (2題)
+      {
+        id: "P1_13", tag: "三角形求底", unit: "cm", ans: 8,
+        prompt: "已知這個三角形的面積是 24 平方厘米(cm²)，求圖中「? cm」所代表的底是多少厘米(cm)？",
+        think: "先把三角形面積乘以 2，再除以垂直的高，兩側斜邊是干擾長度。",
+        fKey: "tri_b",
+        svg: "tri", p: { b: "? cm", h: "6 cm", sL: "7 cm", sR: "8 cm", fill: "#38bdf8" }
+      },
+      {
+        id: "P1_14", tag: "三角形求高", unit: "cm", ans: 8,
+        prompt: "已知這個直角三角形的面積是 28 平方厘米(cm²)，求圖中「? cm」所代表的高是多少厘米(cm)？",
+        think: "先把三角形面積乘以 2，再除以互相垂直的底邊，斜邊是干擾項。",
+        fKey: "tri_h",
+        svg: "tri_right", p: { b: "7 cm", h: "? cm", hyp: "11 cm", fill: "#f472b6" }
+      },
+      // 15-16 梯形求高 (2題)
+      {
+        id: "P1_15", tag: "梯形求高", unit: "cm", ans: 6,
+        prompt: "已知這個梯形的面積是 30 平方厘米(cm²)，求圖中「? cm」所代表的高是多少厘米(cm)？",
+        think: "先把梯形面積乘以 2，再除以（上底 + 下底），不要把斜邊加進去。",
+        fKey: "trap_h",
+        svg: "trap", p: { top: "4 cm", bot: "6 cm", h: "? cm", sL: "7 cm", sR: "7 cm", fill: "#4ade80" }
+      },
+      {
+        id: "P1_16", tag: "梯形求高", unit: "dm", ans: 8,
+        prompt: "已知這個直角梯形的面積是 40 平方分米(dm²)，求圖中「? dm」所代表的高是多少分米(dm)？",
+        think: "利用逆運算：面積 × 2 ÷（上底 + 下底），右邊的斜邊是干擾項。",
+        fKey: "trap_h",
+        svg: "trap_right", p: { top: "3 dm", bot: "7 dm", h: "? dm", sR: "9 dm", fill: "#38bdf8" }
+      },
+      // 17-18 梯形求上底或下底 (2題)
+      {
+        id: "P1_17", tag: "梯形求上底", unit: "cm", ans: 5,
+        prompt: "已知這個梯形的面積是 28 平方厘米(cm²)，求圖中「? cm」所代表的上底是多少厘米(cm)？",
+        think: "先用「面積 × 2 ÷ 垂直高」算出上下底之和，再減去下底，忽略斜邊。",
+        fKey: "trap_top",
+        svg: "trap", p: { top: "? cm", bot: "9 cm", h: "4 cm", sL: "5 cm", sR: "5 cm", fill: "#f472b6" }
+      },
+      {
+        id: "P1_18", tag: "梯形求下底", unit: "m", ans: 9,
+        prompt: "已知這個梯形的面積是 36 平方米(m²)，求圖中「? m」所代表的下底是多少米(m)？",
+        think: "先用「面積 × 2 ÷ 垂直高」算出上下底之和，再減去上底。",
+        fKey: "trap_bot",
+        svg: "trap_right", p: { top: "3 m", bot: "? m", h: "6 m", sR: "8 m", fill: "#4ade80" }
+      },
+      // 19-20 平行四邊形與三角形綜合逆運算 (2題)
+      {
+        id: "P1_19", tag: "平行四邊形求底", unit: "m", ans: 8,
+        prompt: "已知這個平行四邊形的面積是 40 平方米(m²)，求圖中「? m」所代表的底是多少米(m)？",
+        think: "用平行四邊形的面積除以垂直的高，避開斜邊長度。",
+        fKey: "para_b",
+        svg: "para_out", p: { b: "? m", h: "5 m", s: "6 m", fill: "#4ade80" }
+      },
+      {
+        id: "P1_20", tag: "三角形求高", unit: "dm", ans: 4,
+        prompt: "已知這個三角形的面積是 18 平方分米(dm²)，求圖中「? dm」所代表的高是多少分米(dm)？",
+        think: "先把三角形面積乘以 2，再除以對應的底邊長度。",
+        fKey: "tri_h",
+        svg: "tri", p: { b: "9 dm", h: "? dm", sL: "6 dm", sR: "6 dm", fill: "#f472b6" }
+      }
+    ];
+
+    /*************************************************************************
+     * 5. 第二部份題庫：10 道全新組合圖形（多邊形）面積題（1-5分割法、6-10填補法）
+     *    所有邊長均完整標示於圖上，無算式或文字提示，第2題正方形與第10題多邊形已修正
+     *************************************************************************/
+    const PART2_BANK = [
+      // 第 1 題：分割法（L 形多邊形）
+      {
+        id: "P2_01", tag: "第 1 題｜分割法（L 形多邊形）", unit: "m²", ans: 47,
+        prompt: "根據圖中標示的各邊長度，這個 L 形多邊形的面積是多少平方米(m²)？",
+        think: "可用分割法把圖形分成左、右兩個長方形（或上、下兩個長方形），分別算出面積後相加。",
+        fKey: "split_method",
+        svg: "p2_01_L"
+      },
+      // 第 2 題：分割法（正方形 + 三角形屋頂，下方嚴格為 120x120 正方形）
+      {
+        id: "P2_02", tag: "第 2 題｜分割法（五邊形木牌）", unit: "m²", ans: 48,
+        prompt: "如圖所示，這個五邊形木牌下方是一個邊長 6 m 的正方形，上方是一個高 4 m 的三角形，木牌的總面積是多少平方米(m²)？",
+        think: "先算出下方邊長 6 m 的正方形面積，再加上上方底 6 m、高 4 m 的三角形面積。",
+        fKey: "split_method",
+        svg: "p2_02_pentagon"
+      },
+      // 第 3 題：分割法（雙梯形加中間正方形）
+      {
+        id: "P2_03", tag: "第 3 題｜分割法（對稱多邊形）", unit: "cm²", ans: 61,
+        prompt: "根據圖中標示的各邊長度，這個由左、右兩個對稱直角梯形與中間正方形組成的多邊形，總面積是多少平方厘米(cm²)？",
+        think: "分別算出左、右兩個直角梯形的面積，以及中間邊長 5 cm 的正方形面積，再全部相加。",
+        fKey: "split_method",
+        svg: "p2_03_arch"
+      },
+      // 第 4 題：分割法（正方形 + 三個三角形）
+      {
+        id: "P2_04", tag: "第 4 題｜分割法（飛船多邊形）", unit: "cm²", ans: 63,
+        prompt: "根據圖中標示的各邊長度，這個由中間邊長 6 cm 的正方形與三個高為 3 cm 的三角形組成的多邊形，總面積是多少平方厘米(cm²)？",
+        think: "先算中間邊長 6 cm 的正方形面積，再加上上方、左方、右方三個底 6 cm、高 3 cm 的三角形面積。",
+        fKey: "split_method",
+        svg: "p2_04_craft"
+      },
+      // 第 5 題：分割法（直角梯形 + 下方長方形）
+      {
+        id: "P2_05", tag: "第 5 題｜分割法（階梯多邊形）", unit: "cm²", ans: 70,
+        prompt: "根據圖中標示的各邊長度，這個多邊形的面積是多少平方厘米(cm²)？",
+        think: "可沿水平虛線分割成上方的直角梯形與下方的長方形，分別算出面積後相加。",
+        fKey: "split_method",
+        svg: "p2_05_step"
+      },
+      // 第 6 題：填補法（長方形缺三角形角）
+      {
+        id: "P2_06", tag: "第 6 題｜填補法（缺角長方形）", unit: "cm²", ans: 57,
+        prompt: "根據圖中標示的各邊長度，這個左上角有一個三角形缺口的多邊形，面積是多少平方厘米(cm²)？",
+        think: "先算出完整大長方形（底 9 cm、高 7 cm）的面積，再減去左上角空白三角形（底 4 cm、高 3 cm）的面積。",
+        fKey: "fill_method",
+        svg: "p2_06_notch"
+      },
+      // 第 7 題：填補法（大正方形減右側梯形缺口）
+      {
+        id: "P2_07", tag: "第 7 題｜填補法（正方形剪去梯形）", unit: "cm²", ans: 69,
+        prompt: "根據圖中標示的各邊長度，從邊長 9 cm 的大正方形右側剪去一個梯形缺口後，塗色多邊形的面積是多少平方厘米(cm²)？",
+        think: "先算出邊長 9 cm 的大正方形面積，再減去右側空白梯形（上底 3 cm、下底 5 cm、高 3 cm）的面積。",
+        fKey: "fill_method",
+        svg: "p2_07_sq_trap"
+      },
+      // 第 8 題：填補法（直角梯形減上方三角形缺口）
+      {
+        id: "P2_08", tag: "第 8 題｜填補法（梯形剪去三角形）", unit: "cm²", ans: 52,
+        prompt: "根據圖中標示的各邊長度，從大直角梯形上方剪去一個底 6 cm、高 4 cm 的直角三角形後，塗色多邊形的面積是多少平方厘米(cm²)？",
+        think: "先算出完整大梯形（上底 6 cm、下底 10 cm、高 8 cm）的面積，再減去上方空白三角形的面積。",
+        fKey: "fill_method",
+        svg: "p2_08_trap_tri"
+      },
+      // 第 9 題：填補法（長方形上下各剪去一個三角形）
+      {
+        id: "P2_09", tag: "第 9 題｜填補法（雙缺口多邊形）", unit: "m²", ans: 40,
+        prompt: "根據圖中標示的各邊長度，一個底 8 m、高 7 m 的長方形，上下兩端各剪去一個高 2 m 的三角形後，塗色多邊形的面積是多少平方米(m²)？",
+        think: "先算完整大長方形面積，再減去上、下兩個空白三角形（底 8 m、高 2 m）的面積。",
+        fKey: "fill_method",
+        svg: "p2_09_banner"
+      },
+      // 第 10 題：填補法求多邊形面積（大長方形右側剪去梯形缺口）
+      {
+        id: "P2_10", tag: "第 10 題｜填補法（凹口多邊形）", unit: "cm²", ans: 68,
+        prompt: "根據圖中標示的各邊長度，一個底 10 cm、高 8 cm 的大長方形，右側剪去一個高為 3 cm 的梯形凹口後，塗色多邊形的面積是多少平方厘米(cm²)？",
+        think: "先算完整大長方形（10 cm × 8 cm）的面積，再減去右側空白梯形（上底 2 cm、下底 6 cm、高 3 cm）的面積。",
+        fKey: "fill_method",
+        svg: "p2_10_凹_poly"
+      }
+    ];
+
+    function getActiveBank() {
+      return currentPart === 1 ? PART1_BANK : PART2_BANK;
+    }
+
+    /*************************************************************************
+     * 6. 純幾何數值標示 SVG 繪圖引擎（完全不含「底/高/算式」文字提示，每邊皆標長度）
+     *************************************************************************/
+    function drawQuestionSVG(q) {
+      const stage = document.getElementById("svgStage");
+      const p = q.p || {};
+      let html = "";
+
+      if (q.svg === "para") {
+        // 平行四邊形：標示底 b、垂直高 h、斜邊 s（干擾項）
+        html = `
+          <svg width="400" height="260" viewBox="0 0 400 260">
+            <polygon points="105,55 315,55 265,190 55,190" fill="${p.fill}" fill-opacity="0.55" stroke="#1e293b" stroke-width="3"/>
+            <line x1="105" y1="55" x2="105" y2="190" stroke="#0284c7" stroke-width="2.8" stroke-dasharray="6,4"/>
+            <rect x="105" y="176" width="14" height="14" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <text x="190" y="44" font-size="16" font-weight="900" fill="#475569">${p.b}</text>
+            <text x="155" y="218" font-size="17" font-weight="900" fill="#0f172a">${p.b}</text>
+            <text x="115" y="130" font-size="17" font-weight="900" fill="#dc2626">${p.h}</text>
+            <text x="40" y="125" font-size="16" font-weight="900" fill="#0f172a">${p.s}</text>
+            <text x="298" y="128" font-size="16" font-weight="900" fill="#0f172a">${p.s}</text>
+          </svg>`;
+      } else if (q.svg === "para_out") {
+        // 外部高平行四邊形：標示底 b、外部垂直高 h、斜邊 s（干擾項）
+        html = `
+          <svg width="400" height="260" viewBox="0 0 400 260">
+            <polygon points="95,50 255,50 335,190 175,190" fill="${p.fill}" fill-opacity="0.55" stroke="#1e293b" stroke-width="3"/>
+            <line x1="95" y1="50" x2="95" y2="190" stroke="#0284c7" stroke-width="2.8" stroke-dasharray="6,4"/>
+            <line x1="95" y1="190" x2="175" y2="190" stroke="#64748b" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <rect x="95" y="176" width="14" height="14" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <text x="160" y="40" font-size="16" font-weight="900" fill="#475569">${p.b}</text>
+            <text x="235" y="218" font-size="17" font-weight="900" fill="#0f172a">${p.b}</text>
+            <text x="35" y="128" font-size="17" font-weight="900" fill="#dc2626">${p.h}</text>
+            <text x="305" y="120" font-size="16" font-weight="900" fill="#0f172a">${p.s}</text>
+          </svg>`;
+      } else if (q.svg === "tri") {
+        // 一般三角形：標示底 b、垂直高 h、左斜邊 sL、右斜邊 sR
+        html = `
+          <svg width="400" height="260" viewBox="0 0 400 260">
+            <polygon points="195,40 325,195 65,195" fill="${p.fill}" fill-opacity="0.55" stroke="#1e293b" stroke-width="3"/>
+            <line x1="195" y1="40" x2="195" y2="195" stroke="#0284c7" stroke-width="2.8" stroke-dasharray="6,4"/>
+            <rect x="195" y="181" width="14" height="14" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <text x="175" y="222" font-size="17" font-weight="900" fill="#0f172a">${p.b}</text>
+            <text x="205" y="135" font-size="17" font-weight="900" fill="#dc2626">${p.h}</text>
+            <text x="95" y="115" font-size="16" font-weight="900" fill="#0f172a">${p.sL}</text>
+            <text x="270" y="115" font-size="16" font-weight="900" fill="#0f172a">${p.sR}</text>
+          </svg>`;
+      } else if (q.svg === "tri_right") {
+        // 直角三角形：標示底 b、垂直高 h、斜邊 hyp
+        html = `
+          <svg width="400" height="260" viewBox="0 0 400 260">
+            <polygon points="270,40 270,195 95,195" fill="${p.fill}" fill-opacity="0.55" stroke="#1e293b" stroke-width="3"/>
+            <rect x="256" y="181" width="14" height="14" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <text x="170" y="222" font-size="17" font-weight="900" fill="#0f172a">${p.b}</text>
+            <text x="282" y="125" font-size="17" font-weight="900" fill="#dc2626">${p.h}</text>
+            <text x="135" y="110" font-size="16" font-weight="900" fill="#0f172a">${p.hyp}</text>
+          </svg>`;
+      } else if (q.svg === "trap") {
+        // 等腰/一般梯形：標示上底 top、下底 bot、垂直高 h、左右斜邊 sL/sR
+        html = `
+          <svg width="400" height="260" viewBox="0 0 400 260">
+            <polygon points="130,55 265,55 325,190 70,190" fill="${p.fill}" fill-opacity="0.55" stroke="#1e293b" stroke-width="3"/>
+            <line x1="130" y1="55" x2="130" y2="190" stroke="#0284c7" stroke-width="2.8" stroke-dasharray="6,4"/>
+            <rect x="130" y="176" width="14" height="14" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <text x="180" y="42" font-size="17" font-weight="900" fill="#0f172a">${p.top}</text>
+            <text x="180" y="218" font-size="17" font-weight="900" fill="#0f172a">${p.bot}</text>
+            <text x="140" y="130" font-size="17" font-weight="900" fill="#dc2626">${p.h}</text>
+            <text x="62" y="125" font-size="16" font-weight="900" fill="#0f172a">${p.sL}</text>
+            <text x="305" y="125" font-size="16" font-weight="900" fill="#0f172a">${p.sR}</text>
+          </svg>`;
+      } else if (q.svg === "trap_right") {
+        // 直角梯形：標示上底 top、下底 bot、左垂直高 h、右斜邊 sR
+        html = `
+          <svg width="400" height="260" viewBox="0 0 400 260">
+            <polygon points="105,55 245,55 315,190 105,190" fill="${p.fill}" fill-opacity="0.55" stroke="#1e293b" stroke-width="3"/>
+            <rect x="105" y="55" width="14" height="14" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <rect x="105" y="176" width="14" height="14" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <text x="160" y="42" font-size="17" font-weight="900" fill="#0f172a">${p.top}</text>
+            <text x="190" y="218" font-size="17" font-weight="900" fill="#0f172a">${p.bot}</text>
+            <text x="48" y="130" font-size="17" font-weight="900" fill="#dc2626">${p.h}</text>
+            <text x="290" y="122" font-size="16" font-weight="900" fill="#0f172a">${p.sR}</text>
+          </svg>`;
+      } else if (q.svg === "rect_diag") {
+        // 長方形（含對角線干擾項與四邊標示）
+        html = `
+          <svg width="400" height="260" viewBox="0 0 400 260">
+            <rect x="85" y="55" width="220" height="135" fill="${p.fill}" fill-opacity="0.55" stroke="#1e293b" stroke-width="3"/>
+            <line x1="85" y1="190" x2="305" y2="55" stroke="#64748b" stroke-width="2.5" stroke-dasharray="6,4"/>
+            <rect x="85" y="176" width="14" height="14" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <rect x="291" y="176" width="14" height="14" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <text x="175" y="43" font-size="16" font-weight="900" fill="#475569">${p.b}</text>
+            <text x="175" y="216" font-size="17" font-weight="900" fill="#0f172a">${p.b}</text>
+            <text x="35" y="130" font-size="16" font-weight="900" fill="#475569">${p.h}</text>
+            <text x="315" y="130" font-size="17" font-weight="900" fill="#0f172a">${p.h}</text>
+            <text x="175" y="120" font-size="16" font-weight="900" fill="#dc2626">${p.diag}</text>
+          </svg>`;
+      } else if (q.svg === "sq_diag") {
+        // 正方形（嚴格 145x145 正方比例，含對角線干擾項與四邊標示）
+        html = `
+          <svg width="400" height="260" viewBox="0 0 400 260">
+            <rect x="125" y="45" width="145" height="145" fill="${p.fill}" fill-opacity="0.55" stroke="#1e293b" stroke-width="3"/>
+            <line x1="125" y1="190" x2="270" y2="45" stroke="#64748b" stroke-width="2.5" stroke-dasharray="6,4"/>
+            <rect x="125" y="176" width="14" height="14" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <rect x="256" y="176" width="14" height="14" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <text x="180" y="34" font-size="16" font-weight="900" fill="#0f172a">${p.s}</text>
+            <text x="180" y="215" font-size="17" font-weight="900" fill="#0f172a">${p.s}</text>
+            <text x="72" y="125" font-size="16" font-weight="900" fill="#0f172a">${p.s}</text>
+            <text x="280" y="125" font-size="17" font-weight="900" fill="#0f172a">${p.s}</text>
+            <text x="185" y="115" font-size="16" font-weight="900" fill="#dc2626">${p.diag}</text>
+          </svg>`;
+      } else if (q.svg === "p2_01_L") {
+        // 第二部份第1題：L形多邊形（全部 6 條邊皆標出長度：頂5m、左7m、底9m、右3m、內高4m、內橫4m；面積 = 5×7 + 4×3 = 47 m²）
+        html = `
+          <svg width="400" height="265" viewBox="0 0 400 265">
+            <polygon points="90,35 200,35 200,125 290,125 290,195 90,195" fill="#fef08a" stroke="#1e293b" stroke-width="3"/>
+            <rect x="90" y="35" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="90" y="183" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="278" y="183" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <text x="130" y="26" font-size="16" font-weight="900" fill="#0f172a">5 m</text>
+            <text x="45" y="120" font-size="16" font-weight="900" fill="#0f172a">7 m</text>
+            <text x="208" y="88" font-size="15" font-weight="900" fill="#475569">4 m</text>
+            <text x="235" y="116" font-size="15" font-weight="900" fill="#475569">4 m</text>
+            <text x="300" y="168" font-size="16" font-weight="900" fill="#0f172a">3 m</text>
+            <text x="175" y="220" font-size="16" font-weight="900" fill="#0f172a">9 m</text>
+          </svg>`;
+      } else if (q.svg === "p2_02_pentagon") {
+        // 第二部份第2題（已修正為嚴格 120x120 正方形 + 高 4m 三角形屋頂，斜邊 5m，全部邊長標示齊全；面積 = 6×6 + 6×4÷2 = 48 m²）
+        html = `
+          <svg width="400" height="270" viewBox="0 0 400 270">
+            <!-- 下方嚴格 120px × 120px 正方形 (x:140~260, y:105~225) -->
+            <rect x="140" y="105" width="120" height="120" fill="#38bdf8" fill-opacity="0.55" stroke="#1e293b" stroke-width="3"/>
+            <!-- 上方三角形屋頂 (頂點 200,25，高 80px 對應 4m，底 120px 對應 6m) -->
+            <polygon points="200,25 260,105 140,105" fill="#f472b6" fill-opacity="0.55" stroke="#1e293b" stroke-width="3"/>
+            <line x1="200" y1="25" x2="200" y2="105" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <rect x="200" y="93" width="12" height="12" fill="none" stroke="#dc2626" stroke-width="1.8"/>
+            <rect x="140" y="213" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="248" y="213" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <text x="132" y="65" font-size="15" font-weight="900" fill="#0f172a">5 m</text>
+            <text x="242" y="65" font-size="15" font-weight="900" fill="#0f172a">5 m</text>
+            <text x="206" y="75" font-size="15" font-weight="900" fill="#dc2626">4 m</text>
+            <text x="95" y="170" font-size="16" font-weight="900" fill="#0f172a">6 m</text>
+            <text x="270" y="170" font-size="16" font-weight="900" fill="#0f172a">6 m</text>
+            <text x="185" y="248" font-size="16" font-weight="900" fill="#0f172a">6 m</text>
+          </svg>`;
+      } else if (q.svg === "p2_03_arch") {
+        // 第二部份第3題：左、右直角梯形(上底5,下底7,高3 => 面積各18) + 中間嚴格正方形(5x5 => 25)，總面積 = 18+25+18 = 61 cm²
+        html = `
+          <svg width="400" height="265" viewBox="0 0 400 265">
+            <!-- 左梯形 -->
+            <polygon points="75,65 145,95 145,205 75,205" fill="#4ade80" fill-opacity="0.6" stroke="#1e293b" stroke-width="2.8"/>
+            <!-- 中間嚴格 100x100 正方形 -->
+            <rect x="145" y="40" width="100" height="100" fill="#38bdf8" fill-opacity="0.6" stroke="#1e293b" stroke-width="2.8"/>
+            <!-- 右梯形 -->
+            <polygon points="245,95 315,65 315,205 245,205" fill="#4ade80" fill-opacity="0.6" stroke="#1e293b" stroke-width="2.8"/>
+            <rect x="75" y="193" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="303" y="193" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="145" y="40" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="233" y="40" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <text x="175" y="30" font-size="15" font-weight="900">5 cm</text>
+            <text x="175" y="160" font-size="15" font-weight="900">5 cm</text>
+            <text x="18" y="140" font-size="15" font-weight="900">7 cm</text>
+            <text x="323" y="140" font-size="15" font-weight="900">7 cm</text>
+            <text x="90" y="226" font-size="15" font-weight="900">3 cm</text>
+            <text x="260" y="226" font-size="15" font-weight="900">3 cm</text>
+            <text x="100" y="128" font-size="14" font-weight="900" fill="#dc2626">5 cm</text>
+            <text x="252" y="128" font-size="14" font-weight="900" fill="#dc2626">5 cm</text>
+          </svg>`;
+      } else if (q.svg === "p2_04_craft") {
+        // 第二部份第4題：中間嚴格正方形(6x6=36) + 上、左、右三個三角形(底6,高3 => 各9)，總面積 = 36 + 9×3 = 63 cm²
+        html = `
+          <svg width="400" height="265" viewBox="0 0 400 265">
+            <!-- 中間嚴格 100x100 正方形 (x:150~250, y:95~195) -->
+            <rect x="150" y="95" width="100" height="100" fill="#38bdf8" fill-opacity="0.55" stroke="#1e293b" stroke-width="2.8"/>
+            <!-- 上三角形 -->
+            <polygon points="200,35 250,95 150,95" fill="#f472b6" fill-opacity="0.55" stroke="#1e293b" stroke-width="2.8"/>
+            <!-- 左三角形 -->
+            <polygon points="90,145 150,95 150,195" fill="#4ade80" fill-opacity="0.55" stroke="#1e293b" stroke-width="2.8"/>
+            <!-- 右三角形 -->
+            <polygon points="310,145 250,95 250,195" fill="#4ade80" fill-opacity="0.55" stroke="#1e293b" stroke-width="2.8"/>
+            <!-- 垂直高虛線 -->
+            <line x1="200" y1="35" x2="200" y2="95" stroke="#dc2626" stroke-width="2.2" stroke-dasharray="4,3"/>
+            <line x1="90" y1="145" x2="150" y2="145" stroke="#dc2626" stroke-width="2.2" stroke-dasharray="4,3"/>
+            <line x1="310" y1="145" x2="250" y2="145" stroke="#dc2626" stroke-width="2.2" stroke-dasharray="4,3"/>
+            <rect x="150" y="183" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="238" y="183" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <text x="205" y="75" font-size="14" font-weight="900" fill="#dc2626">3 cm</text>
+            <text x="105" y="140" font-size="14" font-weight="900" fill="#dc2626">3 cm</text>
+            <text x="258" y="140" font-size="14" font-weight="900" fill="#dc2626">3 cm</text>
+            <text x="180" y="218" font-size="16" font-weight="900">6 cm</text>
+            <text x="155" y="130" font-size="15" font-weight="900">6 cm</text>
+          </svg>`;
+      } else if (q.svg === "p2_05_step") {
+        // 第二部份第5題：上方梯形(上底3,下底7,高8 => 40) + 下方長方形(底10,高3 => 30)，總面積 = 70 cm²
+        html = `
+          <svg width="400" height="265" viewBox="0 0 400 265">
+            <polygon points="90,30 160,30 230,150 305,150 305,200 90,200" fill="#fb923c" fill-opacity="0.65" stroke="#1e293b" stroke-width="3"/>
+            <line x1="90" y1="150" x2="230" y2="150" stroke="#0284c7" stroke-width="2.5" stroke-dasharray="6,4"/>
+            <rect x="90" y="30" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="90" y="188" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="293" y="188" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <text x="110" y="22" font-size="15" font-weight="900">3 cm</text>
+            <text x="35" y="98" font-size="15" font-weight="900">8 cm</text>
+            <text x="208" y="95" font-size="14" font-weight="900" fill="#475569">9 cm</text>
+            <text x="255" y="142" font-size="15" font-weight="900">3 cm</text>
+            <text x="315" y="182" font-size="15" font-weight="900">3 cm</text>
+            <text x="35" y="182" font-size="15" font-weight="900">3 cm</text>
+            <text x="180" y="224" font-size="16" font-weight="900">10 cm</text>
+          </svg>`;
+      } else if (q.svg === "p2_06_notch") {
+        // 第二部份第6題：填補法 大長方形(9x7=63) - 左上三角形缺口(底4,高3 => 6) = 57 cm²
+        html = `
+          <svg width="400" height="265" viewBox="0 0 400 265">
+            <polygon points="80,40 130,115 180,40 310,40 310,195 80,195" fill="#38bdf8" fill-opacity="0.6" stroke="#1e293b" stroke-width="3"/>
+            <line x1="80" y1="40" x2="180" y2="40" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <line x1="130" y1="40" x2="130" y2="115" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <rect x="130" y="40" width="12" height="12" fill="none" stroke="#dc2626" stroke-width="1.8"/>
+            <rect x="80" y="183" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="298" y="183" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <text x="115" y="30" font-size="15" font-weight="900" fill="#dc2626">4 cm</text>
+            <text x="138" y="82" font-size="15" font-weight="900" fill="#dc2626">3 cm</text>
+            <text x="230" y="30" font-size="15" font-weight="900">5 cm</text>
+            <text x="28" y="125" font-size="16" font-weight="900">7 cm</text>
+            <text x="320" y="125" font-size="16" font-weight="900">7 cm</text>
+            <text x="180" y="222" font-size="16" font-weight="900">9 cm</text>
+          </svg>`;
+      } else if (q.svg === "p2_07_sq_trap") {
+        // 第二部份第7題：填補法 嚴格大正方形(160x160 對應 9x9=81) - 右側梯形缺口(上底3,下底5,高3 => 12) = 69 cm²
+        html = `
+          <svg width="400" height="265" viewBox="0 0 400 265">
+            <polygon points="110,35 270,35 270,85 215,105 215,155 270,195 110,195" fill="#fb923c" fill-opacity="0.65" stroke="#1e293b" stroke-width="3"/>
+            <line x1="270" y1="85" x2="270" y2="195" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <line x1="215" y1="125" x2="270" y2="125" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="4,3"/>
+            <rect x="110" y="35" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="110" y="183" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <text x="175" y="25" font-size="16" font-weight="900">9 cm</text>
+            <text x="55" y="122" font-size="16" font-weight="900">9 cm</text>
+            <text x="175" y="220" font-size="16" font-weight="900">9 cm</text>
+            <text x="280" y="68" font-size="14" font-weight="900">4 cm</text>
+            <text x="170" y="138" font-size="15" font-weight="900" fill="#dc2626">3 cm</text>
+            <text x="228" y="120" font-size="15" font-weight="900" fill="#dc2626">3 cm</text>
+            <text x="280" y="150" font-size="15" font-weight="900" fill="#dc2626">5 cm</text>
+          </svg>`;
+      } else if (q.svg === "p2_08_trap_tri") {
+        // 第二部份第8題：填補法 大直角梯形(上底6,下底10,高8 => 64) - 上方三角形缺口(底6,高4 => 12) = 52 cm²
+        html = `
+          <svg width="400" height="265" viewBox="0 0 400 265">
+            <polygon points="85,40 165,115 245,40 315,195 85,195" fill="#4ade80" fill-opacity="0.6" stroke="#1e293b" stroke-width="3"/>
+            <line x1="85" y1="40" x2="245" y2="40" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <line x1="165" y1="40" x2="165" y2="115" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <rect x="165" y="40" width="12" height="12" fill="none" stroke="#dc2626" stroke-width="1.8"/>
+            <rect x="85" y="183" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <text x="148" y="28" font-size="16" font-weight="900" fill="#dc2626">6 cm</text>
+            <text x="172" y="88" font-size="15" font-weight="900" fill="#dc2626">4 cm</text>
+            <text x="32" y="125" font-size="16" font-weight="900">8 cm</text>
+            <text x="295" y="120" font-size="15" font-weight="900" fill="#475569">9 cm</text>
+            <text x="180" y="222" font-size="16" font-weight="900">10 cm</text>
+          </svg>`;
+      } else if (q.svg === "p2_09_banner") {
+        // 第二部份第9題：填補法 長方形(8x7=56) - 上下兩個三角形(底8,高2 => 各8) = 40 m²
+        html = `
+          <svg width="400" height="265" viewBox="0 0 400 265">
+            <polygon points="90,35 195,80 300,35 300,195 195,150 90,195" fill="#f472b6" fill-opacity="0.6" stroke="#1e293b" stroke-width="3"/>
+            <line x1="90" y1="35" x2="300" y2="35" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <line x1="195" y1="35" x2="195" y2="80" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="4,3"/>
+            <line x1="90" y1="195" x2="300" y2="195" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <line x1="195" y1="195" x2="195" y2="150" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="4,3"/>
+            <rect x="195" y="35" width="11" height="11" fill="none" stroke="#dc2626" stroke-width="1.8"/>
+            <rect x="195" y="184" width="11" height="11" fill="none" stroke="#dc2626" stroke-width="1.8"/>
+            <text x="180" y="25" font-size="16" font-weight="900">8 m</text>
+            <text x="203" y="65" font-size="14" font-weight="900" fill="#dc2626">2 m</text>
+            <text x="203" y="180" font-size="14" font-weight="900" fill="#dc2626">2 m</text>
+            <text x="42" y="122" font-size="16" font-weight="900">7 m</text>
+            <text x="312" y="122" font-size="16" font-weight="900">7 m</text>
+            <text x="180" y="220" font-size="16" font-weight="900">8 m</text>
+          </svg>`;
+      } else if (q.svg === "p2_10_凹_poly") {
+        // 第二部份第10題（已改為求多邊形面積）：大長方形(10x8=80) - 右側梯形凹口(上底2,下底6,高3 => 12) = 68 cm²
+        html = `
+          <svg width="400" height="265" viewBox="0 0 400 265">
+            <polygon points="75,35 305,35 305,65 240,95 240,135 305,165 305,195 75,195" fill="#38bdf8" fill-opacity="0.6" stroke="#1e293b" stroke-width="3"/>
+            <line x1="305" y1="65" x2="305" y2="165" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <line x1="240" y1="115" x2="305" y2="115" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="4,3"/>
+            <rect x="75" y="35" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="75" y="183" width="12" height="12" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+            <rect x="293" y="103" width="12" height="12" fill="none" stroke="#dc2626" stroke-width="1.8"/>
+            <text x="175" y="25" font-size="16" font-weight="900">10 cm</text>
+            <text x="20" y="122" font-size="16" font-weight="900">8 cm</text>
+            <text x="175" y="222" font-size="16" font-weight="900">10 cm</text>
+            <text x="315" y="55" font-size="14" font-weight="900">1 cm</text>
+            <text x="315" y="188" font-size="14" font-weight="900">1 cm</text>
+            <text x="192" y="120" font-size="15" font-weight="900" fill="#dc2626">2 cm</text>
+            <text x="255" y="108" font-size="15" font-weight="900" fill="#dc2626">3 cm</text>
+            <text x="315" y="122" font-size="15" font-weight="900" fill="#dc2626">6 cm</text>
+          </svg>`;
+      }
+
+      stage.innerHTML = html;
+    }
+
+    /*************************************************************************
+     * 7. 畫面渲染與雙格列式互動邏輯
+     *************************************************************************/
+    function renderWorkspace() {
+      const bank = getActiveBank();
+      const q = bank[currentQIndex];
+
+      const nav = document.getElementById("qNavGrid");
+      nav.innerHTML = "";
+      bank.forEach((item, idx) => {
+        const b = document.createElement("div");
+        const solvedSet = mySolvedIds[currentPart];
+        b.className = "q-num-btn" + (idx === currentQIndex ? " current" : "") + (solvedSet.has(item.id) ? " solved" : "");
+        b.textContent = idx + 1;
+        b.onclick = () => {
+          sfxClick();
+          currentQIndex = idx;
+          renderWorkspace();
+        };
+        nav.appendChild(b);
+      });
+
+      document.getElementById("lessonCategoryTag").textContent = q.tag;
+      document.getElementById("questionPromptText").textContent = `第 ${currentQIndex + 1} 題：${q.prompt}`;
+      document.getElementById("unitBadge").textContent = q.unit;
+
+      document.getElementById("exprInput").value = "";
+      document.getElementById("ansInput").value = "";
+      focusMathField("expr");
+
+      document.getElementById("diagFeedback").className = "diag-feedback";
+      document.getElementById("diagFeedback").style.display = "none";
+      document.getElementById("yellowStickyNote").style.display = "none";
+
+      document.getElementById("solvedProgressText").textContent = `已答對：${mySolvedIds[currentPart].size} / ${bank.length}`;
+
+      drawQuestionSVG(q);
+    }
+
+    function switchPartMode(part) {
+      sfxClick();
+      currentPart = part;
+      currentQIndex = 0;
+      document.getElementById("partBtn1").classList.toggle("active", part === 1);
+      document.getElementById("partBtn2").classList.toggle("active", part === 2);
+      renderWorkspace();
+    }
+
+    function focusMathField(field) {
+      focusedField = field;
+      document.getElementById("exprInput").classList.toggle("focused", field === "expr");
+      document.getElementById("ansInput").classList.toggle("focused", field === "ans");
+    }
+
+    function tapKey(ch) {
+      sfxClick();
+      const target = focusedField === "expr" ? document.getElementById("exprInput") : document.getElementById("ansInput");
+      if (focusedField === "ans" && !/^[0-9]$/.test(ch)) return;
+      target.value += ch;
+    }
+
+    function tapBackspace() {
+      sfxClick();
+      const target = focusedField === "expr" ? document.getElementById("exprInput") : document.getElementById("ansInput");
+      target.value = target.value.slice(0, -1);
+    }
+
+    function tapClearAll() {
+      sfxClick();
+      document.getElementById("exprInput").value = "";
+      document.getElementById("ansInput").value = "";
+      focusMathField("expr");
+    }
+
+    function jumpToAnswerField() {
+      sfxClick();
+      focusMathField("ans");
+      document.getElementById("ansInput").focus();
+    }
+
+    function handleKeydown(e, field) {
+      if (e.key === "=" || (e.key === "Enter" && field === "expr")) {
+        e.preventDefault();
+        jumpToAnswerField();
+      } else if (e.key === "Enter" && field === "ans") {
+        e.preventDefault();
+        checkAndSubmit();
+      }
+    }
+
+    function goPrevQuestion() {
+      sfxClick();
+      const bank = getActiveBank();
+      currentQIndex = (currentQIndex - 1 + bank.length) % bank.length;
+      renderWorkspace();
+    }
+
+    function goNextQuestion() {
+      sfxClick();
+      const bank = getActiveBank();
+      currentQIndex = (currentQIndex + 1) % bank.length;
+      renderWorkspace();
+    }
+
+    /*************************************************************************
+     * 8. 全半形算式解析器（支援乘加交換律）與不洩漏算式的黃色公式便利貼回饋
+     *************************************************************************/
+    function parseStudentExpression(raw) {
+      if (!raw || !raw.trim()) return { hasOp: false, valid: false, val: NaN };
+
+      const normalized = raw
+        .replace(/\s+/g, "")
+        .replace(/[×xX＊*]/g, "*")
+        .replace(/[÷／/]/g, "/")
+        .replace(/[＋+]/g, "+")
+        .replace(/[－−-]/g, "-")
+        .replace(/[（(]/g, "(")
+        .replace(/[）)]/g, ")");
+
+      const hasOp = /[\+\-\*\/]/.test(normalized);
+      if (!/^[0-9\+\-\*\/\(\)]+$/.test(normalized)) {
+        return { hasOp, valid: false, val: NaN };
+      }
+
+      try {
+        const result = Function('"use strict"; return (' + normalized + ')')();
+        if (typeof result === "number" && isFinite(result)) {
+          return { hasOp, valid: true, val: result };
+        }
+      } catch (e) {
+        return { hasOp, valid: false, val: NaN };
+      }
+      return { hasOp, valid: false, val: NaN };
+    }
+
+    function displayStickyHint(q) {
+      const box = document.getElementById("yellowStickyNote");
+      document.getElementById("stickyThinkText").textContent = "💡 思考提示：" + q.think;
+      document.getElementById("stickyFormulaText").textContent = "📒 公式便利貼：" + (STICKY_FORMULAS[q.fKey] || "");
+      box.style.display = "block";
+    }
+
+    function toggleStickyHint() {
+      sfxClick();
+      const q = getActiveBank()[currentQIndex];
+      const box = document.getElementById("yellowStickyNote");
+      if (box.style.display === "block") {
+        box.style.display = "none";
+      } else {
+        displayStickyHint(q);
+      }
+    }
+
+    function checkAndSubmit() {
+      const sel = document.getElementById("studentSelect");
+      const fb = document.getElementById("diagFeedback");
+
+      if (!sel.value) {
+        sfxWrong();
+        fb.className = "diag-feedback warn";
+        fb.textContent = "👉 請先在畫面頂部選單選擇你的姓名，然後再提交答案！";
+        fb.style.display = "block";
+        sel.focus();
+        return;
+      }
+
+      const q = getActiveBank()[currentQIndex];
+      const rawExpr = document.getElementById("exprInput").value.trim();
+      const rawAns = document.getElementById("ansInput").value.trim();
+
+      if (!rawExpr || !rawAns) {
+        sfxWrong();
+        fb.className = "diag-feedback warn";
+        fb.textContent = "⚠️ 請完整填寫左邊「算式格」與右邊「答案格」！";
+        fb.style.display = "block";
+        return;
+      }
+
+      const parsed = parseStudentExpression(rawExpr);
+      const ansNum = Number(rawAns);
+
+      const exprOk = parsed.valid && parsed.hasOp && Math.abs(parsed.val - q.ans) < 1e-6;
+      const ansOk = !isNaN(ansNum) && ansNum === q.ans;
+
+      let resultStatus = "錯誤";
+
+      if (exprOk && ansOk) {
+        sfxCorrect();
+        resultStatus = "正確";
+        mySolvedIds[currentPart].add(q.id);
+        updateClassRecord(sel.value, q.id);
+        renderWorkspace();
+
+        const fbAfter = document.getElementById("diagFeedback");
+        fbAfter.className = "diag-feedback ok";
+        fbAfter.textContent = `🎉 答對了！算式與答案完全正確！（標準答案：${q.ans} ${q.unit}）`;
+        fbAfter.style.display = "block";
+      } else if (exprOk && !ansOk) {
+        sfxWrong();
+        resultStatus = "算式對但答案錯";
+        fb.className = "diag-feedback warn";
+        fb.textContent = "🧐 區別診斷：你的「算式」列得完全正確！但右邊「答案格」計算有誤，請再算一次算式的結果喔！";
+        fb.style.display = "block";
+        displayStickyHint(q);
+      } else if (!exprOk && ansOk) {
+        sfxWrong();
+        resultStatus = "答案對但算式錯";
+        fb.className = "diag-feedback warn";
+        fb.textContent = "🧐 區別診斷：你的「答案」數字對了，但左邊「算式格」沒有列出正確完整的運算式，請參考下方黃色公式便利貼修正算式！";
+        fb.style.display = "block";
+        displayStickyHint(q);
+      } else {
+        sfxWrong();
+        resultStatus = "錯誤";
+        fb.className = "diag-feedback err";
+        fb.textContent = "💪 算式與答案還差一點點！請看下方「黃色公式便利貼」的文字提示再試一次！";
+        fb.style.display = "block";
+        displayStickyHint(q);
+      }
+
+      const nowStr = new Date().toLocaleTimeString("zh-HK", { hour12: false });
+      if (sel.value !== "35 訪客") {
+        recentLogs.unshift({
+          time: nowStr,
+          studentName: sel.value,
+          questionType: q.tag,
+          studentAnswer: `${rawExpr} = ${rawAns}`,
+          result: resultStatus,
+          activityRound: currentRoundName
+        });
+      }
+
+      postToGoogleSheet({
+        studentName: sel.value,
+        questionType: q.tag,
+        questionText: q.prompt,
+        studentAnswer: `${rawExpr} = ${rawAns}`,
+        result: resultStatus,
+        activityRound: currentRoundName,
+        questionId: q.id
+      });
+    }
+
+    /*************************************************************************
+     * 9. 學生切換、一鍵登出與教師本機免鎖金牌特權
+     *************************************************************************/
+    function hasTeacherGoldPrivilege() {
+      return sessionStorage.getItem("TEACHER_GOLD_PRIVILEGE") === "true";
+    }
+
+    function refreshLockAndPrivilegeUI() {
+      const isTeacher = hasTeacherGoldPrivilege();
+      document.getElementById("teacherGoldBadge").style.display = isTeacher ? "inline-block" : "none";
+
+      const blockStudent = (remoteLockStatus === "closed") && !isTeacher;
+      document.getElementById("lockScreenOverlay").style.display = blockStudent ? "flex" : "none";
+
+      const lockBtn = document.getElementById("remoteLockBtn");
+      if (lockBtn) {
+        if (remoteLockStatus === "closed") {
+          lockBtn.textContent = "🔓 開放課堂作答";
+          lockBtn.className = "pill-action-btn btn-green-open";
+        } else {
+          lockBtn.textContent = "🔒 一鍵鎖定課堂";
+          lockBtn.className = "pill-action-btn btn-red-lock";
+        }
+      }
+    }
+
+    function handleStudentSelect() {
+      sfxClick();
+      mySolvedIds = { 1: new Set(), 2: new Set() };
+      renderWorkspace();
+    }
+
+    function logoutAndReset() {
+      sfxClick();
+      document.getElementById("studentSelect").value = "";
+      mySolvedIds = { 1: new Set(), 2: new Set() };
+      sessionStorage.removeItem("TEACHER_GOLD_PRIVILEGE");
+      refreshLockAndPrivilegeUI();
+      renderWorkspace();
+    }
+
+    /*************************************************************************
+     * 10. 零延遲防窺教師密碼盤 (400351)
+     *************************************************************************/
+    let pinCodeInput = "";
+
+    function openPinOverlay() {
+      sfxClick();
+      pinCodeInput = "";
+      document.getElementById("pinErrText").textContent = "";
+      updatePinSlots();
+      document.getElementById("pinOverlay").style.display = "flex";
+    }
+
+    function closePinOverlay(e) {
+      if (e) e.preventDefault();
+      pinCodeInput = "";
+      updatePinSlots();
+      document.getElementById("pinOverlay").style.display = "none";
+    }
+
+    function clearPin(e) {
+      if (e) e.preventDefault();
+      pinCodeInput = "";
+      document.getElementById("pinErrText").textContent = "";
+      updatePinSlots();
+    }
+
+    function updatePinSlots() {
+      const boxes = document.querySelectorAll("#pinSlotsRow .pin-box");
+      boxes.forEach((box, idx) => {
+        box.textContent = idx < pinCodeInput.length ? "*" : "";
+      });
+    }
+
+    function pressPin(digit, e) {
+      if (e) e.preventDefault();
+      if (pinCodeInput.length >= 6) return;
+      pinCodeInput += digit;
+      updatePinSlots();
+
+      if (pinCodeInput.length === 6) {
+        if (pinCodeInput === TEACHER_PIN_CODE) {
+          sessionStorage.setItem("TEACHER_GOLD_PRIVILEGE", "true");
+          refreshLockAndPrivilegeUI();
+          document.getElementById("pinOverlay").style.display = "none";
+          openTeacherBoard();
+        } else {
+          sfxWrong();
+          document.getElementById("pinErrText").textContent = "❌ 密碼錯誤，請重新輸入";
+          pinCodeInput = "";
+          updatePinSlots();
+        }
+      }
+    }
+
+    /*************************************************************************
+     * 11. 手繪奶油風「課堂活動數據統計」教師看板邏輯
+     *************************************************************************/
+    function updateClassRecord(studentName, qId) {
+      if (!studentName || studentName === "35 訪客") return;
+      const map = roundStats[currentRoundName] || (roundStats[currentRoundName] = {});
+      if (!map[studentName]) {
+        map[studentName] = { solvedSet: new Set(), lastTime: Date.now() };
+      }
+      if (!map[studentName].solvedSet.has(qId)) {
+        map[studentName].solvedSet.add(qId);
+        map[studentName].lastTime = Date.now();
+      }
+    }
+
+    function openTeacherBoard() {
+      document.getElementById("teacherBoardModal").style.display = "flex";
+      syncBackendState();
+      renderTeacherBoard();
+    }
+
+    function closeTeacherBoard() {
+      sfxClick();
+      document.getElementById("teacherBoardModal").style.display = "none";
+      refreshLockAndPrivilegeUI();
+    }
+
+    function selectStudentForChick(stName) {
+      sfxClick();
+      selectedBoardStudent = stName;
+      renderTeacherBoard();
+    }
+
+    function resetCurrentRoundStats() {
+      sfxClick();
+      if (confirm(`確定要清空當前「${currentRoundName}」的看板統計顯示嗎？`)) {
+        roundStats[currentRoundName] = {};
+        selectedBoardStudent = null;
+        renderTeacherBoard();
+      }
+    }
+
+    function toggleSubmissionLog() {
+      sfxClick();
+      const drawer = document.getElementById("submissionLogDrawer");
+      drawer.style.display = drawer.style.display === "block" ? "none" : "block";
+      renderLogTable();
+    }
+
+    function renderLogTable() {
+      const tbody = document.getElementById("submissionLogTbody");
+      const filtered = recentLogs.filter(item => item.activityRound === currentRoundName).slice(0, 30);
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#94a3b8;">本回合尚無作答紀錄</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = filtered.map(item => `
+        <tr>
+          <td>${item.time}</td>
+          <td>${item.studentName}</td>
+          <td>${item.questionType}</td>
+          <td>${item.studentAnswer}</td>
+          <td style="color:${item.result === '正確' ? '#16a34a' : '#dc2626'};">${item.result}</td>
+          <td>${item.activityRound}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderTeacherBoard() {
+      const rMap = roundStats[currentRoundName] || {};
+      const cardsGrid = document.getElementById("studentCardsGrid");
+      cardsGrid.innerHTML = "";
+
+      let presentCount = 0;
+      let totalSolvedSum = 0;
+      const leaderboard = [];
+
+      OFFICIAL_STUDENTS.forEach(stName => {
+        const rec = rMap[stName];
+        const solvedCount = rec ? Math.min(20, rec.solvedSet.size) : 0;
+        totalSolvedSum += solvedCount;
+
+        if (solvedCount > 0) {
+          presentCount++;
+          leaderboard.push({
+            name: stName,
+            score: solvedCount,
+            lastTime: rec.lastTime
+          });
+        }
+
+        const pct = Math.min(100, Math.round((solvedCount / 20) * 100));
+        const isFull = solvedCount >= 20;
+        const barColorClass = isFull ? "bar-gold" : (solvedCount >= 10 ? "bar-green" : "bar-orange");
+
+        const card = document.createElement("div");
+        card.className = "st-progress-card" + (selectedBoardStudent === stName ? " selected-st" : "");
+        card.onclick = () => selectStudentForChick(stName);
+        card.innerHTML = `
+          <div class="st-card-top">
+            <span>${isFull ? "👑 " : ""}${stName}</span>
+            <span>(${solvedCount}/20)</span>
+          </div>
+          <div class="st-mini-bar-bg">
+            <div class="st-mini-bar-fill ${barColorClass}" style="width: ${pct}%;"></div>
+          </div>
+        `;
+        cardsGrid.appendChild(card);
+      });
+
+      const subtitleEl = document.getElementById("spotlightSubtitle");
+      let displayPct = 0;
+
+      if (selectedBoardStudent) {
+        const stRec = rMap[selectedBoardStudent];
+        const stSolved = stRec ? Math.min(20, stRec.solvedSet.size) : 0;
+        displayPct = Math.min(100, Math.round((stSolved / 20) * 100));
+        subtitleEl.textContent = `${selectedBoardStudent} (${stSolved}/20)`;
+      } else {
+        const avgSolved = presentCount > 0 ? (totalSolvedSum / presentCount) : 0;
+        displayPct = Math.min(100, Math.round((avgSolved / 20) * 100));
+        subtitleEl.textContent = `全班平均答對題數 (${avgSolved.toFixed(1)}/20)`;
+      }
+
+      document.getElementById("chickStripeFill").style.width = `${displayPct}%`;
+      document.getElementById("chickRunnerSvg").style.left = `${Math.max(4, Math.min(91, displayPct))}%`;
+      document.getElementById("chickPctNum").textContent = `${displayPct}%`;
+
+      document.getElementById("boardPresentNum").textContent = presentCount;
+      document.getElementById("boardAbsentNum").textContent = OFFICIAL_STUDENTS.length - presentCount;
+
+      leaderboard.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.lastTime - b.lastTime;
+      });
+
+      const top10 = leaderboard.slice(0, 10);
+      const speedContainer = document.getElementById("boardSpeedPills");
+      if (top10.length === 0) {
+        speedContainer.innerHTML = `<div class="speed-pill-row" style="justify-content:center;color:#94a3b8;">尚無學生提交正確答案</div>`;
+      } else {
+        speedContainer.innerHTML = top10.map((item, idx) => {
+          const rankPrefix = idx === 0 ? "🥇 " : idx === 1 ? "🥈 " : idx === 2 ? "🥉 " : `${idx + 1}. `;
+          const timeStr = new Date(item.lastTime).toLocaleTimeString("zh-HK", { hour12: false });
+          return `
+            <div class="speed-pill-row">
+              <span>${rankPrefix}${item.name}</span>
+              <span class="speed-pill-right">${item.score}/20 題 <small>(${timeStr})</small></span>
+            </div>
+          `;
+        }).join("");
+      }
+
+      const rIdx = currentRoundName === "活動一" ? 1 : currentRoundName === "活動二" ? 2 : 3;
+      document.getElementById("leftCardBadge").textContent = `第 ${rIdx} 科 / 共 3 科 (${currentRoundName})`;
+
+      [1, 2, 3].forEach(i => {
+        document.getElementById("actBigBtn" + i).classList.toggle("active-round-btn", i === rIdx);
+        document.getElementById("ongoingTag" + i).style.display = i === rIdx ? "inline-block" : "none";
+      });
+
+      renderLogTable();
+    }
+
+    const WEEK_DAYS = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+    setInterval(() => {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const m = now.getMonth() + 1;
+      const d = now.getDate();
+      const w = WEEK_DAYS[now.getDay()];
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      const ss = String(now.getSeconds()).padStart(2, "0");
+
+      const dateEl = document.getElementById("boardDateStr");
+      const timeEl = document.getElementById("boardTimeStr");
+      if (dateEl) dateEl.textContent = `${yyyy}年${m}月${d}日 ${w}`;
+      if (timeEl) timeEl.textContent = `${hh}:${mm}:${ss}`;
+    }, 1000);
+
+    /*************************************************************************
+     * 12. 後端 Google Sheet 同步
+     *************************************************************************/
+    async function postToGoogleSheet(data) {
+      if (!data.studentName || data.studentName === "35 訪客") return;
+
+      const payload = {
+        action: "submitAnswer",
+        spreadsheetId: SPREADSHEET_ID,
+        sheetName: DATA_SHEET_NAME,
+        timestamp: new Date().toLocaleString("zh-HK", { hour12: false }),
+        studentName: data.studentName,
+        questionType: data.questionType,
+        questionText: data.questionText,
+        studentAnswer: data.studentAnswer,
+        result: data.result,
+        activityRound: data.activityRound,
+        questionId: data.questionId
+      };
+
+      try {
+        await fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {}
+    }
+
+    async function toggleRemoteLock() {
+      sfxClick();
+      remoteLockStatus = remoteLockStatus === "open" ? "closed" : "open";
+      refreshLockAndPrivilegeUI();
+      try {
+        await fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "setControl",
+            spreadsheetId: SPREADSHEET_ID,
+            lockState: remoteLockStatus,
+            activityRound: currentRoundName
+          })
+        });
+      } catch (e) {}
+    }
+
+    async function switchActivityRound(roundName) {
+      sfxClick();
+      currentRoundName = roundName;
+      selectedBoardStudent = null;
+      document.getElementById("topRoundBadge").textContent = currentRoundName;
+      renderTeacherBoard();
+      try {
+        await fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "setControl",
+            spreadsheetId: SPREADSHEET_ID,
+            lockState: remoteLockStatus,
+            activityRound: currentRoundName
+          })
+        });
+      } catch (e) {}
+    }
+
+    function manualSyncNow() {
+      sfxClick();
+      syncBackendState();
+    }
+
+    async function syncBackendState() {
+      try {
+        const res = await fetch(`${GAS_WEB_APP_URL}?action=getStatus&spreadsheetId=${encodeURIComponent(SPREADSHEET_ID)}`);
+        if (!res.ok) return;
+        const json = await res.json();
+
+        if (json.lockState === "open" || json.lockState === "closed") {
+          remoteLockStatus = json.lockState;
+        }
+        if (json.activityRound) {
+          currentRoundName = json.activityRound;
+          document.getElementById("topRoundBadge").textContent = currentRoundName;
+        }
+        if (Array.isArray(json.records)) {
+          recentLogs = [];
+          json.records.forEach(r => {
+            if (r.studentName && r.studentName !== "35 訪客") {
+              const tStr = r.ts ? new Date(r.ts).toLocaleTimeString("zh-HK", { hour12: false }) : "";
+              recentLogs.unshift({
+                time: tStr,
+                studentName: r.studentName,
+                questionType: r.questionType || "",
+                studentAnswer: r.studentAnswer || "",
+                result: r.result || "",
+                activityRound: r.activityRound || "活動一"
+              });
+            }
+            if (r.result === "正確" && r.studentName && r.studentName !== "35 訪客") {
+              const rd = r.activityRound || "活動一";
+              if (!roundStats[rd]) roundStats[rd] = {};
+              if (!roundStats[rd][r.studentName]) {
+                roundStats[rd][r.studentName] = { solvedSet: new Set(), lastTime: r.ts || Date.now() };
+              }
+              roundStats[rd][r.studentName].solvedSet.add(r.questionId || r.questionText);
+              if (r.ts && r.ts > roundStats[rd][r.studentName].lastTime) {
+                roundStats[rd][r.studentName].lastTime = r.ts;
+              }
+            }
+          });
+        }
+        refreshLockAndPrivilegeUI();
+        if (document.getElementById("teacherBoardModal").style.display === "flex") {
+          renderTeacherBoard();
+        }
+      } catch (e) {}
+    }
+
+    setInterval(syncBackendState, 8000);
+
+    window.addEventListener("DOMContentLoaded", () => {
+      refreshLockAndPrivilegeUI();
+      renderWorkspace();
+      syncBackendState();
+    });
+  </script>
+</body>
+</html>
